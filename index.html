@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<!-- head 部分的 style 保持不变，省略... -->
+<head>
+    <meta charset="UTF-8">
+    <title>今天吃什么？</title>
+    <style>
+        /* 之前的所有样式保持不变 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+        .food-display {
+            font-size: 24px;
+            height: 60px;
+            line-height: 60px;
+            text-align: center;
+            margin: 20px 0;
+            border: 2px solid #e8e8e8;
+            border-radius: 4px;
+            position: relative;
+        }
+        .food-display.rolling::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+            animation: borderDance 1s linear infinite;
+        }
+        @keyframes borderDance {
+            0% { clip-path: inset(0 0 95% 0); }
+            25% { clip-path: inset(0 0 0 95%); }
+            50% { clip-path: inset(95% 0 0 0); }
+            75% { clip-path: inset(0 95% 0 0); }
+            100% { clip-path: inset(0 0 95% 0); }
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+            min-width: 80px;
+        }
+        .start-btn:hover {
+            background-color: #45a049;
+        }
+        .start-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .add-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .add-btn:hover {
+            background-color: #1976D2;
+        }
+        .reset-btn {
+            background-color: #ff9800;
+            color: white;
+        }
+        .reset-btn:hover {
+            background-color: #f57c00;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            flex-grow: 1;
+        }
+        .food-list {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .food-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center;">今天吃什么？</h1>
+        
+        <div class="food-display" id="foodDisplay">点击开始</div>
+        
+        <div class="controls">
+            <button class="start-btn" onclick="startRoll()" id="startBtn">开始</button>
+            <input type="text" id="newFood" placeholder="添加新的食物">
+            <button class="add-btn" onclick="addFood()">添加</button>
+            <button class="reset-btn" onclick="resetToDefault()">重置</button>
+        </div>
+
+        <div class="food-list" id="foodList"></div>
+    </div>
+
+    <script>
+        const defaultFoods = [
+            "麻辣烫", "炸鸡", "火锅", "寿司", 
+            "披萨", "汉堡", "面条", "煲仔饭",
+            "沙拉", "烤肉", "饺子", "盖浇饭"
+        ];
+
+        let foods = [];
+        let isRolling = false;
+        let isSlowingDown = false;
+        let rollInterval;
+        let currentSpeed = 50;    // 初始滚动速度（毫秒）
+        const maxSpeed = 50;      // 最快速度
+        const minSpeed = 300;     // 最慢速度（改为300ms）
+        const speedStep = 50;     // 每次增加50ms
+        let startBtn;
+        let slowDownTimer = null;
+
+        function loadFoods() {
+            const savedFoods = localStorage.getItem('foodList');
+            if (savedFoods) {
+                foods = JSON.parse(savedFoods);
+            } else {
+                foods = [...defaultFoods];
+                saveFoods();
+            }
+            updateFoodList();
+        }
+
+        function saveFoods() {
+            localStorage.setItem('foodList', JSON.stringify(foods));
+        }
+
+        function resetToDefault() {
+            if (confirm('确定要重置为默认列表吗？这将删除所有自定义添加的食物。')) {
+                foods = [...defaultFoods];
+                saveFoods();
+                updateFoodList();
+            }
+        }
+
+        function updateFoodList() {
+            const foodList = document.getElementById('foodList');
+            foodList.innerHTML = '';
+            foods.forEach((food, index) => {
+                const foodItem = document.createElement('div');
+                foodItem.className = 'food-item';
+                foodItem.innerHTML = `
+                    <span>${food}</span>
+                    <button class="delete-btn" onclick="deleteFood(${index})">删除</button>
+                `;
+                foodList.appendChild(foodItem);
+            });
+        }
+
+        function addFood() {
+            const input = document.getElementById('newFood');
+            const food = input.value.trim();
+            if (food && !foods.includes(food)) {
+                foods.push(food);
+                saveFoods();
+                updateFoodList();
+                input.value = '';
+            }
+        }
+
+        function deleteFood(index) {
+            foods.splice(index, 1);
+            saveFoods();
+            updateFoodList();
+        }
+
+        function roll() {
+            const randomIndex = Math.floor(Math.random() * foods.length);
+            document.getElementById('foodDisplay').textContent = foods[randomIndex];
+        }
+
+        function slowDown() {
+            if (slowDownTimer) {
+                clearTimeout(slowDownTimer);
+            }
+            
+            currentSpeed += speedStep; // 每次增加50ms
+            clearInterval(rollInterval);
+            
+            if (currentSpeed >= minSpeed) {
+                // 停止滚动
+                isRolling = false;
+                isSlowingDown = false;
+                startBtn.textContent = '开始';
+                startBtn.disabled = false;
+                document.getElementById('foodDisplay').classList.remove('rolling');
+                currentSpeed = maxSpeed; // 重置速度为初始值
+                return;
+            }
+
+            // 使用新的速度继续滚动
+            rollInterval = setInterval(roll, currentSpeed);
+            // 继续减速过程
+            slowDownTimer = setTimeout(slowDown, currentSpeed);
+        }
+
+        function startRoll() {
+            startBtn = document.getElementById('startBtn');
+            const display = document.getElementById('foodDisplay');
+            
+            if (isRolling) {
+                if (!isSlowingDown) {
+                    isSlowingDown = true;
+                    startBtn.disabled = true;
+                    startBtn.textContent = '减速中';
+                    slowDown();
+                }
+            } else {
+                isRolling = true;
+                currentSpeed = maxSpeed;
+                startBtn.textContent = '停止';
+                display.classList.add('rolling');
+                rollInterval = setInterval(roll, currentSpeed);
+            }
+        }
+
+        document.getElementById('newFood').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addFood();
+            }
+        });
+
+        // 页面加载时初始化
+        loadFoods();
+    </script>
+</body>
+</html>
