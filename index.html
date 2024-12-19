@@ -1,38 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta charset="UTF-8">
     <title>今天吃什么？</title>
     <style>
-        /* 之前的所有样式保持不变 */
         body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             background-color: #f0f2f5;
-            padding: 20px;
+            padding: 10px;
+            margin: 0;
         }
         .container {
             background: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            width: 80%;
+            width: 95%;
             max-width: 600px;
         }
         .food-display {
-            font-size: 24px;
+            font-size: clamp(18px, 5vw, 24px);
             height: 60px;
             line-height: 60px;
             text-align: center;
-            margin: 20px 0;
+            margin: 15px 0;
             border: 2px solid #e8e8e8;
             border-radius: 4px;
             position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
         .food-display.rolling::before {
             content: '';
@@ -54,21 +57,23 @@
         }
         .controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 8px 16px;
+            font-size: clamp(14px, 4vw, 16px);
             border: none;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s;
+            white-space: nowrap;
         }
         .start-btn {
             background-color: #4CAF50;
             color: white;
-            min-width: 80px;
+            min-width: 70px;
         }
         .start-btn:hover {
             background-color: #45a049;
@@ -93,15 +98,16 @@
         }
         input {
             padding: 8px;
-            font-size: 16px;
+            font-size: clamp(14px, 4vw, 16px);
             border: 1px solid #ddd;
             border-radius: 4px;
-            flex-grow: 1;
+            flex: 1;
+            min-width: 120px;
         }
         .food-list {
-            margin-top: 20px;
+            margin-top: 15px;
             border-top: 1px solid #eee;
-            padding-top: 20px;
+            padding-top: 15px;
         }
         .food-item {
             display: flex;
@@ -111,21 +117,49 @@
             margin: 4px 0;
             background-color: #f8f9fa;
             border-radius: 4px;
+            font-size: clamp(14px, 4vw, 16px);
         }
         .delete-btn {
             background-color: #dc3545;
             color: white;
             padding: 4px 8px;
-            font-size: 14px;
+            font-size: clamp(12px, 3.5vw, 14px);
         }
         .delete-btn:hover {
             background-color: #c82333;
+        }
+        h1 {
+            font-size: clamp(20px, 6vw, 24px);
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+                width: 100%;
+            }
+            .controls {
+                flex-direction: column;
+            }
+            .controls button,
+            .controls input {
+                width: 100%;
+            }
+            .food-item {
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            .food-display {
+                height: 50px;
+                line-height: 50px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 style="text-align: center;">今天吃什么？</h1>
+        <h1>今天吃什么？</h1>
         
         <div class="food-display" id="foodDisplay">点击开始</div>
         
@@ -140,6 +174,7 @@
     </div>
 
     <script>
+        // JavaScript code remains exactly the same as in your original version
         const defaultFoods = [
             "麻辣烫", "炸鸡", "火锅", "寿司", 
             "披萨", "汉堡", "面条", "煲仔饭",
@@ -150,10 +185,10 @@
         let isRolling = false;
         let isSlowingDown = false;
         let rollInterval;
-        let currentSpeed = 50;    // 初始滚动速度（毫秒）
-        const maxSpeed = 50;      // 最快速度
-        const minSpeed = 300;     // 最慢速度（改为300ms）
-        const speedStep = 50;     // 每次增加50ms
+        let currentSpeed = 50;
+        const maxSpeed = 50;
+        const minSpeed = 300;
+        const speedStep = 50;
         let startBtn;
         let slowDownTimer = null;
 
@@ -221,23 +256,20 @@
                 clearTimeout(slowDownTimer);
             }
             
-            currentSpeed += speedStep; // 每次增加50ms
+            currentSpeed += speedStep;
             clearInterval(rollInterval);
             
             if (currentSpeed >= minSpeed) {
-                // 停止滚动
                 isRolling = false;
                 isSlowingDown = false;
                 startBtn.textContent = '开始';
                 startBtn.disabled = false;
                 document.getElementById('foodDisplay').classList.remove('rolling');
-                currentSpeed = maxSpeed; // 重置速度为初始值
+                currentSpeed = maxSpeed;
                 return;
             }
 
-            // 使用新的速度继续滚动
             rollInterval = setInterval(roll, currentSpeed);
-            // 继续减速过程
             slowDownTimer = setTimeout(slowDown, currentSpeed);
         }
 
@@ -267,7 +299,6 @@
             }
         });
 
-        // 页面加载时初始化
         loadFoods();
     </script>
 </body>
